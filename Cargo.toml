@@ -8,8 +8,9 @@ edition = "2021"
 [dependencies]
 actix-web = "4"
 chrono = "0.4.35"
-diesel = { version = "2.1.6", features = ["postgres", "chrono"] }
+diesel = { version = "2.1.6", features = ["postgres", "chrono", "uuid"] }
 diesel-async = { version = "0.4.1", features = ["mobc", "postgres"] }
+dotenvy = "0.15.7"
 flate2 = "1.0.30"
 hex = "0.4.3"
 lazy_static = "1.4.0"
