@@ -1,4 +1,6 @@
 mod api;
+mod req;
+mod resp;
 
 use actix_web::{HttpServer, App, web};
 
@@ -9,6 +11,7 @@ pub async fn run(host: impl ToString, port: u16, state: State) -> std::io::Resul
         App::new()
             .app_data(web::Data::new(state.clone()))
             .service(api::ping)
+            .service(api::user_create)
     })
     .bind((host.to_string(), port))?
     .run()
