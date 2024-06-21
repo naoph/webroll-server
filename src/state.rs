@@ -10,13 +10,15 @@ use crate::PgPool;
 pub struct State {
     pub pool: PgPool,
     pub job_manager: JobManager,
+    pub worker_selector: WorkerSelector,
 }
 
 impl State {
-    pub fn new(pool: PgPool) -> Self {
+    pub fn new(pool: PgPool, workers: Vec<url::Url>) -> Self {
         Self {
             pool,
             job_manager: JobManager::new(),
+            worker_selector: WorkerSelector::new(workers),
         }
     }
 }
@@ -52,4 +54,23 @@ pub enum JobProgress {
     Pending,
     Finished,
     Failed,
+}
+
+#[derive(Clone, Debug)]
+pub struct WorkerSelector {
+    workers: Vec<url::Url>,
+}
+
+impl WorkerSelector {
+    pub fn new(workers: Vec<url::Url>) -> Self {
+        Self {
+            workers,
+        }
+    }
+
+    /// Select the next worker
+    pub fn select_worker(&self) -> &url::Url {
+        // TODO: round-robin selection
+        self.workers.get(0).unwrap()
+    }
 }

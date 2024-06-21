@@ -1,5 +1,6 @@
 #[macro_use] extern crate log;
 
+mod config;
 mod extract;
 mod models;
 mod schema;
@@ -13,13 +14,18 @@ type PgPool = Pool<AsyncPgConnection>;
 
 #[tokio::main]
 async fn main() {
+    // Setup
     pretty_env_logger::init();
     dotenvy::dotenv()
         .expect("Failed to load .env");
+    let config = match config::Config::from_env("WEBROLL_SERVER_CONFIG") {
+        Ok(c) => c,
+        Err(e) => panic!("{e}"),
+    };
     let database_url = std::env::var("DATABASE_URL")
         .expect("Could not find DATABASE_URL env var");
-    let state = state::State::new(init_db(database_url));
-    web::run("127.0.0.1", 8080, state)
+    let state = state::State::new(init_db(database_url), config.workers());
+    web::run(config.listen_ip(), config.listen_port(), state)
         .await
         .unwrap();
 }

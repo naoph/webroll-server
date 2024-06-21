@@ -62,7 +62,8 @@ pub async fn capture_create(data: web::Data<State>, request: web::Json<CreateCap
     let uuid = uuid::Uuid::new_v4().to_string();
     let url = request.url.clone();
     data.job_manager.new_job(uuid.clone()).await;
-    tokio::task::spawn(crate::extract::extract(url, uuid.clone()));
+    let worker = data.worker_selector.select_worker();
+    tokio::task::spawn(crate::extract::extract(url, uuid.clone(), worker.clone()));
     web::Json(CreateCaptureResp { uuid: uuid.to_string() })
 }
 
