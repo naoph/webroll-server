@@ -56,3 +56,22 @@ pub async fn user_create(data: web::Data<State>, request: web::Json<CreateUserRe
         _ => unreachable!("≠1 rows affected while creating single user"),
     }
 }
+
+#[post("/capture/create")]
+pub async fn capture_create(data: web::Data<State>, request: web::Json<CreateCaptureReq>) -> impl Responder {
+    let uuid = uuid::Uuid::new_v4().to_string();
+    let url = request.url.clone();
+    data.job_manager.new_job(uuid.clone()).await;
+    tokio::task::spawn(crate::extract::extract(url, uuid.clone()));
+    web::Json(CreateCaptureResp { uuid: uuid.to_string() })
+}
+
+#[post("/capture/monitor")]
+pub async fn capture_monitor(data: web::Data<State>, request: web::Json<MonitorCaptureReq>) -> impl Responder {
+    let uuid = request.uuid.clone();
+    let response = match data.job_manager.get_progress(&uuid).await {
+        Some(p) => MonitorCaptureResp::Capturing { progress: p },
+        None => MonitorCaptureResp::NoSuchCapture,
+    };
+    web::Json(response)
+}

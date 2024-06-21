@@ -12,6 +12,8 @@ pub async fn run(host: impl ToString, port: u16, state: State) -> std::io::Resul
             .app_data(web::Data::new(state.clone()))
             .service(api::ping)
             .service(api::user_create)
+            .service(api::capture_create)
+            .service(api::capture_monitor)
     })
     .bind((host.to_string(), port))?
     .run()

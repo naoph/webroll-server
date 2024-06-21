@@ -1,5 +1,6 @@
 #[macro_use] extern crate log;
 
+mod extract;
 mod models;
 mod schema;
 mod state;
