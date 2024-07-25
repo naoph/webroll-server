@@ -1,0 +1,22 @@
+[package]
+name = "webroll-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-web = "4"
+bcrypt = "0.15.1"
+chrono = "0.4.35"
+diesel = { version = "2.1.6", features = ["postgres", "chrono", "uuid"] }
+diesel-async = { version = "0.4.1", features = ["mobc", "postgres"] }
+dotenvy = "0.15.7"
+log = "0.4.21"
+pretty_env_logger = "0.5.0"
+ron = "0.8.1"
+serde = { version = "1", features = ["derive"] }
+snafu = "0.8.3"
+tokio = { version = "1", features = ["full"] }
+url = { version = "2", features = ["serde"] }
+uuid = { version = "1.8.0", features = ["v4"] }
