@@ -15,11 +15,11 @@ pub struct DbCapture {
 #[derive(Insertable)]
 #[diesel(table_name = captures)]
 pub struct InsCapture {
-    uuid: uuid::Uuid,
-    url: String,
-    time: chrono::NaiveDateTime,
-    owner: i32,
-    public: bool,
+    pub uuid: uuid::Uuid,
+    pub url: String,
+    pub time: chrono::NaiveDateTime,
+    pub owner: i32,
+    pub public: bool,
 }
 
 #[derive(Queryable)]
@@ -32,6 +32,6 @@ pub struct DbUser {
 #[derive(Insertable)]
 #[diesel(table_name = users)]
 pub struct InsUser {
-    name: String,
-    passhash: String,
+    pub name: String,
+    pub passhash: String,
 }
