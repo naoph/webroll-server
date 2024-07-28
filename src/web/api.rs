@@ -1,3 +1,4 @@
+use actix_web::cookie::Cookie;
 use actix_web::http::StatusCode;
 use actix_web::{post, web, Responder};
 use diesel::prelude::*;
@@ -93,6 +94,7 @@ pub async fn create_session(state: web::Data<State>, request: web::Json<client::
 
     web::Json(client::CreateSessionResp::Success)
         .customize()
-        .insert_header(("Set-Cookie", format!("session={}", token)))
+        .add_cookie(&Cookie::new("user", user.id.to_string()))
+        .add_cookie(&Cookie::new("session", token))
         .with_status(StatusCode::CREATED)
 }
