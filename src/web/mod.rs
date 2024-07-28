@@ -7,6 +7,7 @@ pub async fn run(host: impl ToString, port: u16, state: crate::state::State) -> 
         App::new()
             .app_data(web::Data::new(state.clone()))
             .service(api::create_user)
+            .service(api::create_session)
     })
     .bind((host.to_string(), port))?
     .run()

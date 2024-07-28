@@ -2,17 +2,17 @@ use diesel::prelude::{Insertable, Queryable};
 
 use crate::schema::*;
 
-#[derive(Queryable)]
+#[derive(Debug, Queryable)]
 pub struct DbCapture {
-    id: i32,
-    uuid: uuid::Uuid,
-    url: String,
-    time: chrono::DateTime<chrono::Utc>,
-    owner: i32,
-    public: bool,
+    pub id: i32,
+    pub uuid: uuid::Uuid,
+    pub url: String,
+    pub time: chrono::DateTime<chrono::Utc>,
+    pub owner: i32,
+    pub public: bool,
 }
 
-#[derive(Insertable)]
+#[derive(Debug, Insertable)]
 #[diesel(table_name = captures)]
 pub struct InsCapture {
     pub uuid: uuid::Uuid,
@@ -22,14 +22,14 @@ pub struct InsCapture {
     pub public: bool,
 }
 
-#[derive(Queryable)]
+#[derive(Debug, Queryable)]
 pub struct DbUser {
-    id: i32,
-    name: String,
-    passhash: String,
+    pub id: i32,
+    pub name: String,
+    pub passhash: String,
 }
 
-#[derive(Insertable)]
+#[derive(Debug, Insertable)]
 #[diesel(table_name = users)]
 pub struct InsUser {
     pub name: String,

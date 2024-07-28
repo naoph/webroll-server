@@ -1879,6 +1879,7 @@ name = "webroll-server"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "base64 0.22.1",
  "bcrypt",
  "chrono",
  "diesel",
@@ -1886,6 +1887,7 @@ dependencies = [
  "dotenvy",
  "log",
  "pretty_env_logger",
+ "rand",
  "ron",
  "serde",
  "snafu",

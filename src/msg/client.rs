@@ -15,3 +15,17 @@ pub enum CreateUserResp {
     InvalidPassword,
     UnexpectedError,
 }
+
+#[derive(Deserialize)]
+pub struct CreateSessionReq {
+    pub name: String,
+    pub password: String,
+}
+
+#[derive(Serialize)]
+#[serde(tag = "result", rename_all = "snake_case")]
+pub enum CreateSessionResp {
+    Success,
+    InvalidCredentials,
+    UnexpectedError,
+}
