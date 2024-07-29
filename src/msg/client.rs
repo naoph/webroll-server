@@ -29,3 +29,11 @@ pub enum CreateSessionResp {
     InvalidCredentials,
     UnexpectedError,
 }
+
+#[derive(Serialize)]
+#[serde(tag = "result", rename_all = "snake_case")]
+pub enum DeleteSessionResp {
+    Success,
+    InvalidCredentials,
+    UnexpectedError,
+}

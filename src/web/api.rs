@@ -1,6 +1,6 @@
 use actix_web::cookie::Cookie;
 use actix_web::http::StatusCode;
-use actix_web::{post, web, Responder};
+use actix_web::{delete, post, web, Either, HttpRequest, Responder};
 use diesel::prelude::*;
 use diesel::result::DatabaseErrorKind;
 use diesel_async::RunQueryDsl;
@@ -9,6 +9,31 @@ use crate::models::*;
 use crate::msg::client;
 use crate::schema::{self, *};
 use crate::state::State;
+
+/// Authenticate the request using the user and session cookies
+macro_rules! auth {
+    ( $r:expr, $s:expr, $f:expr ) => {{
+        let forbidden_response = web::Json($f)
+            .customize()
+            .with_status(StatusCode::FORBIDDEN);
+        let user_id = match $r.cookie("user") {
+            Some(a) => a.value().to_string(),
+            None => return Either::Right(forbidden_response),
+        };
+        let user_id = match user_id.parse::<i32>() {
+            Ok(i) => i,
+            Err(_) => return Either::Right(forbidden_response),
+        };
+        let token = match $r.cookie("session") {
+            Some(a) => a.value().to_string(),
+            None => return Either::Right(forbidden_response),
+        };
+        if !$s.validate(user_id, &token).await {
+            return Either::Right(forbidden_response);
+        };
+        user_id
+    }};
+}
 
 #[post("/user/create")]
 pub async fn create_user(state: web::Data<State>, request: web::Json<client::CreateUserReq>) -> impl Responder {
@@ -97,4 +122,17 @@ pub async fn create_session(state: web::Data<State>, request: web::Json<client::
         .add_cookie(&Cookie::new("user", user.id.to_string()))
         .add_cookie(&Cookie::new("session", token))
         .with_status(StatusCode::CREATED)
+}
+
+#[delete("/user/session/all")]
+pub async fn delete_all_sessions(state: web::Data<State>, full_request: HttpRequest) -> impl Responder {
+    // Validate and authenticate session info
+    let user_id = auth!(full_request, state.sessions, client::DeleteSessionResp::InvalidCredentials);
+
+    state.sessions.delete_all(user_id).await;
+
+    let response = web::Json(client::DeleteSessionResp::Success)
+        .customize()
+        .with_status(StatusCode::OK);
+    Either::Left(response)
 }

@@ -44,6 +44,26 @@ impl SessionManager {
         inner.reverse.entry(user.id.clone()).and_modify(|v| v.push(b64.clone())).or_insert(vec![b64.clone()]);
         b64
     }
+
+    /// Validate session token for a specified user
+    pub async fn validate(&self, user: i32, token: &str) -> bool {
+        let inner = self.inner.lock()
+            .await;
+        inner.forward.get(token) == Some(&user)
+    }
+
+    /// Delete all sessions for a specified user
+    pub async fn delete_all(&self, user: i32) {
+        let mut inner = self.inner.lock()
+            .await;
+        let sessions = inner.reverse.get(&user)
+            .unwrap_or(&Vec::new())
+            .clone();
+        for session in sessions.iter() {
+            inner.forward.remove(session);
+        }
+        inner.reverse.remove(&user);
+    }
 }
 
 #[derive(Debug)]
