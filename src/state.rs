@@ -1,21 +1,28 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use async_channel::Sender;
 use base64::Engine;
 use rand::RngCore;
 use tokio::sync::Mutex;
+use url::Url;
+use uuid::Uuid;
+
+use crate::msg::worker;
 
 #[derive(Clone)]
 pub struct State {
     pub pool: crate::PgPool,
     pub sessions: SessionManager,
+    pub batch_manager: BatchManager,
 }
 
 impl State {
-    pub fn new(pool: crate::PgPool) -> Self {
+    pub fn new(pool: crate::PgPool, capture_manager: CaptureManager) -> Self {
         Self {
             pool,
             sessions: SessionManager::new(),
+            batch_manager: BatchManager::new(capture_manager),
         }
     }
 }
@@ -78,5 +85,128 @@ impl SessionManagerInner {
             forward: HashMap::new(),
             reverse: HashMap::new(),
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct BatchManager {
+    map: Arc<Mutex<HashMap<Uuid, BatchStatus>>>,
+    capture_manager: CaptureManager,
+}
+
+impl BatchManager {
+    pub fn new(capture_manager: CaptureManager) -> Self {
+        Self {
+            map: Arc::new(Mutex::new(HashMap::new())),
+            capture_manager,
+        }
+    }
+
+    /// Initiate captures for a batch of URLs, returning a new UUID to represent the batch
+    pub async fn process_batch(&self, urls: Vec<Url>, owner: i32) -> uuid::Uuid {
+        let mut captures_all = Vec::new();
+        for url in urls.iter() {
+            let capture_uuid = self.capture_manager.process_capture(url.clone()).await;
+            captures_all.push(capture_uuid);
+        }
+        let batch_uuid = Uuid::new_v4();
+        let status = BatchStatus::from_vec(captures_all, owner);
+        self.map.lock()
+            .await
+            .insert(batch_uuid, status);
+        batch_uuid
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct BatchStatus {
+    captures_all: Vec<Uuid>,
+    captures_complete: Vec<Uuid>,
+    captures_failed: Vec<Uuid>,
+    owner: i32,
+}
+
+impl BatchStatus {
+    pub fn from_vec(vec: Vec<Uuid>, owner: i32) -> Self {
+        Self {
+            captures_all: vec,
+            captures_complete: Vec::new(),
+            captures_failed: Vec::new(),
+            owner,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct CaptureManager {
+    map: Arc<Mutex<HashMap<Uuid, CaptureStatus>>>,
+    worker_selector: WorkerSelector,
+}
+
+impl CaptureManager {
+    pub fn from_pairs(pairs: Vec<(Url, Sender<Url>)>) -> Self {
+        Self {
+            map: Arc::new(Mutex::new(HashMap::new())),
+            worker_selector: WorkerSelector::from_pairs(pairs),
+        }
+    }
+    pub async fn process_capture(&self, url: Url) -> Uuid {
+        let capture_uuid = self.worker_selector
+            .least_busy()
+            .initiate(url)
+            .await;
+        capture_uuid
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct CaptureStatus {
+    source_batch: Uuid,
+    owner: i32,
+}
+
+#[derive(Clone, Debug)]
+pub struct WorkerSelector {
+    workers: Vec<Worker>,
+}
+
+impl WorkerSelector {
+    pub fn from_pairs(pairs: Vec<(Url, Sender<Url>)>) -> Self {
+        let v: Vec<Worker> = pairs.into_iter()
+            .map(|p| Worker::from_pair(p))
+            .collect();
+        Self {
+            workers: v,
+        }
+    }
+    pub fn least_busy(&self) -> &Worker {
+        let mut v = Vec::new();
+        for w in self.workers.iter() {
+            v.push((w.sender.len(), w));
+        }
+        v.sort_unstable_by_key(|k| k.0);
+        v.first().unwrap().1
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Worker {
+    sender: async_channel::Sender<Url>,
+}
+
+impl Worker {
+    pub fn from_pair(pair: (Url, Sender<Url>)) -> Self {
+        Self {
+            sender: pair.1,
+        }
+    }
+
+    pub fn backlog(&self) -> usize {
+        self.sender.len()
+    }
+
+    pub async fn initiate(&self, target: Url) -> Uuid {
+        let _ = self.sender.send(target).await;
+        Uuid::new_v4()
     }
 }

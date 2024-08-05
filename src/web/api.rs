@@ -136,3 +136,24 @@ pub async fn delete_all_sessions(state: web::Data<State>, full_request: HttpRequ
         .with_status(StatusCode::OK);
     Either::Left(response)
 }
+
+#[post("/batch/create")]
+pub async fn create_batch(state: web::Data<State>, request: web::Json<client::CreateBatchReq>, full_request: HttpRequest) -> impl Responder {
+    // Validate and authenticate session info
+    let user_id = auth!(full_request, state.sessions, client::CreateBatchResp::InvalidCredentials);
+
+    if request.urls.len() == 0 {
+        let response = web::Json(client::CreateBatchResp::NoUrls)
+            .customize()
+            .with_status(StatusCode::BAD_REQUEST);
+        return Either::Left(response);
+    }
+
+    let batch_uuid = state.batch_manager.process_batch(request.urls.clone(), user_id)
+        .await;
+
+    let response = web::Json(client::CreateBatchResp::Success { batch_uuid })
+        .customize()
+        .with_status(StatusCode::ACCEPTED);
+    Either::Left(response)
+}

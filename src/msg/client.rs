@@ -37,3 +37,16 @@ pub enum DeleteSessionResp {
     InvalidCredentials,
     UnexpectedError,
 }
+
+#[derive(Deserialize)]
+pub struct CreateBatchReq {
+    pub urls: Vec<url::Url>,
+}
+
+#[derive(Serialize)]
+pub enum CreateBatchResp {
+    Success { batch_uuid: uuid::Uuid },
+    InvalidCredentials,
+    NoUrls,
+    UnexpectedError,
+}

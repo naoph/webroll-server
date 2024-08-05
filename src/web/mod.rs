@@ -9,6 +9,7 @@ pub async fn run(host: impl ToString, port: u16, state: crate::state::State) -> 
             .service(api::create_user)
             .service(api::create_session)
             .service(api::delete_all_sessions)
+            .service(api::create_batch)
     })
     .bind((host.to_string(), port))?
     .run()
