@@ -1,5 +1,6 @@
 #[macro_use] extern crate log;
 
+mod config;
 mod msg;
 mod models;
 mod schema;
@@ -19,10 +20,10 @@ async fn main() {
         .expect("Failed to load .env");
     let database_url = std::env::var("DATABASE_URL")
         .expect("Could not find DATABASE_URL environment variable");
-    let workers: Vec<url::Url> = vec![
-    ];
-    let mut pairs: Vec<(url::Url, async_channel::Sender<url::Url>)> = Vec::new();
-    for worker in workers {
+    let config = config::Config::from_env("WEBROLL_SERVER_CONFIG")
+        .expect("Could not load config file");
+    let mut pairs: Vec<(config::WorkerSpec, async_channel::Sender<url::Url>)> = Vec::new();
+    for worker in config.workers() {
         let (ws, wr) = async_channel::unbounded::<url::Url>();
         pairs.push((worker.clone(), ws));
         tokio::task::spawn(tasks::worker(worker.clone(), wr.clone()));

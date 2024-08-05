@@ -144,12 +144,13 @@ pub struct CaptureManager {
 }
 
 impl CaptureManager {
-    pub fn from_pairs(pairs: Vec<(Url, Sender<Url>)>) -> Self {
+    pub fn from_pairs(pairs: Vec<(crate::config::WorkerSpec, Sender<Url>)>) -> Self {
         Self {
             map: Arc::new(Mutex::new(HashMap::new())),
             worker_selector: WorkerSelector::from_pairs(pairs),
         }
     }
+
     pub async fn process_capture(&self, url: Url) -> Uuid {
         let capture_uuid = self.worker_selector
             .least_busy()
@@ -171,7 +172,7 @@ pub struct WorkerSelector {
 }
 
 impl WorkerSelector {
-    pub fn from_pairs(pairs: Vec<(Url, Sender<Url>)>) -> Self {
+    pub fn from_pairs(pairs: Vec<(crate::config::WorkerSpec, Sender<Url>)>) -> Self {
         let v: Vec<Worker> = pairs.into_iter()
             .map(|p| Worker::from_pair(p))
             .collect();
@@ -195,7 +196,7 @@ pub struct Worker {
 }
 
 impl Worker {
-    pub fn from_pair(pair: (Url, Sender<Url>)) -> Self {
+    pub fn from_pair(pair: (crate::config::WorkerSpec, Sender<Url>)) -> Self {
         Self {
             sender: pair.1,
         }
